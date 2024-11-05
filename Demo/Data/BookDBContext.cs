@@ -1,16 +1,27 @@
-﻿namespace Demo.Model
+﻿using Microsoft.EntityFrameworkCore;
+
+namespace Demo.Data
 {
-    public static class Repository
+    public class BookDBContext : DbContext
     {
-        public static List<Book> Books { get; set; } = new List<Book>()
+        public BookDBContext(DbContextOptions<BookDBContext> options) : base(options)
         {
-            new Book
+            
+        }
+
+        public DbSet<Book> Books { get; set; }
+
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            modelBuilder.Entity<Book>().HasData(new List<Book>()
+            {
+                new Book
             {
                 Id = 1,
                 Name = "The First Teacher",
                 Author = "Chinghiz Aitmatov",
                 Year = 1962
-            },          
+            },
             new Book
             {
                 Id = 2,
@@ -25,6 +36,7 @@
                 Author = "Mark Twain",
                 Year = 1876
             }
-        };
+            });
+        }
     }
 }

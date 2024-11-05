@@ -1,5 +1,5 @@
-﻿using Demo.Model;
-using Microsoft.AspNetCore.Http;
+﻿using Demo.Data;
+using Demo.Model;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Demo.Controllers
@@ -8,13 +8,20 @@ namespace Demo.Controllers
     [ApiController]
     public class BooksController : ControllerBase
     {
+        private readonly BookDBContext _dbContext;
+
+        public BooksController(BookDBContext dbContext)
+        {
+            _dbContext = dbContext;
+        }
+
         [HttpGet]
         [Route("All", Name = "GetAllBooks")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public ActionResult<IEnumerable<BookDTO>> GetAllBooks()
         {
-            var books = Repository.Books.Select(b => new BookDTO()
+            var books = _dbContext.Books.Select(b => new BookDTO()
             {
                 Id = b.Id,
                 Name = b.Name,
@@ -36,7 +43,7 @@ namespace Demo.Controllers
             if (id <= 0)
                 return BadRequest();
 
-            Book book = Repository.Books.FirstOrDefault(b => b.Id == id);
+            Book book = _dbContext.Books.FirstOrDefault(b => b.Id == id);
 
             if (book == null)
                 return NotFound($"Book id {id} is not found");
@@ -62,7 +69,7 @@ namespace Demo.Controllers
             if (string.IsNullOrWhiteSpace(name))
                 return BadRequest();
 
-            Book book = Repository.Books.FirstOrDefault(b => b.Name.ToUpper().Contains(name.Trim().ToUpper()));
+            Book book = _dbContext.Books.FirstOrDefault(b => b.Name.ToUpper().Contains(name.Trim().ToUpper()));
 
             if (book == null)
                 return NotFound($"Book name {name} is not found");
@@ -88,34 +95,36 @@ namespace Demo.Controllers
             if (id <= 0)
                 return BadRequest();
 
-            Book book = Repository.Books.FirstOrDefault(b => b.Id == id);
+            Book book = _dbContext.Books.FirstOrDefault(b => b.Id == id);
 
             if (book == null)
                 return NotFound($"Book id {id} is not found");
 
-            return Ok(Repository.Books.Remove(book));
+            _dbContext.Books.Remove(book);
+            _dbContext.SaveChanges();
+
+            return Ok();
         }
 
         [HttpPost("Create", Name = "CreateBook")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public ActionResult<BookDTO> CreateBook([FromBody]Book model)
+        public ActionResult<BookDTO> CreateBook([FromBody]BookDTO model)
         {
             if (model == null)
                 return BadRequest();
 
-            int newId = Repository.Books.LastOrDefault().Id + 1;
 
             Book book = new Book()
             {
-                Id = newId,
                 Name = model.Name,
                 Author = model.Author,
                 Year = model.Year
             };
 
-            Repository.Books.Add(book);
+            _dbContext.Books.Add(book);
+            _dbContext.SaveChanges();
 
             return Ok(book);
 
